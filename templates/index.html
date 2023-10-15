@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+    <style>
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        }
+    </style>
+</head>
+<body>
+
+{% if username %}
+<h3>Current user: {{ username }}</h3>
+{% endif %}
+
+<table>
+        {% for person in people %}
+            <tr>
+                <th>{{ person.id }}</th>
+                <td>{{ person.name }}</td>
+                <td>{{ person.phone_number }}</td>
+                <td>{{ person.city }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html>

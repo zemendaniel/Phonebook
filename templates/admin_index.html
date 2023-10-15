@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+    <style>
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        }
+    </style>
+</head>
+
+<body>
+<table>
+        {% for person in people %}
+            <tr>
+                <th>{{ person.id }}</th>
+                <td>{{ person.name }}</td>
+                <td>{{ person.phone_number }}</td>
+                <td>{{ person.city }}</td>
+
+                <form action="" method="post">
+                <input type="hidden" value="{{ person.id }}" name="delete">
+                <td><button type="submit">Delete</button></td>
+                </form>
+
+                <form action="" method="post">
+                <input type="hidden" value="{{ person.id }}" name="edit">
+                <td><button type="submit">Edit</button></td>
+                </form>
+            </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html>
