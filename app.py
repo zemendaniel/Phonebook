@@ -1,6 +1,10 @@
+# sql injection, alapvető gombok, flashek, welcome page, error handling
+
+from functions import *
 from flask import Flask, render_template, request, redirect, url_for, g, session, current_app, flash
 import functools
 import pymysql
+import hashlib
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'F33811E3C49CF7F69EDC56C7AAA9B'
@@ -18,15 +22,15 @@ def user(view):
     def wrapped_view(**kwargs):
         username = session.get('username')
         if username is None:
-            return redirect(url_for('login'))
+            return redirect(url_for('welcome'))
         with connection.cursor() as cursor:
             sql = "SELECT role FROM users WHERE username = %s;"
             cursor.execute(sql, username)
             role = cursor.fetchone()[0]
-        if role == 'user' or role == 'admin':
+        if role in ['user', 'admin']:
             return view(**kwargs)
 
-        return redirect(url_for('login'))
+        return redirect(url_for('welcome'))
 
     return wrapped_view
 
@@ -36,7 +40,7 @@ def admin(view):
     def wrapped_view(**kwargs):
         username = session.get('username')
         if username is None:
-            return redirect(url_for('login'))
+            return redirect(url_for('welcome'))
         with connection.cursor() as cursor:
             sql = "SELECT role FROM users WHERE username = %s;"
             cursor.execute(sql, session['username'])
@@ -44,7 +48,7 @@ def admin(view):
         if role == 'admin':
             return view(**kwargs)
 
-        return redirect(url_for('login'))
+        return redirect(url_for('welcome'))
 
     return wrapped_view
 
@@ -64,6 +68,11 @@ class Person:
         self.phone_number = person[2]
         self.city = person[3]
 
+class User:
+    def __init__(self, user):
+        self.username = user[0]
+        self.role = user[1]
+
 
 @app.route('/login', methods=("GET", "POST"))
 def login():
@@ -72,10 +81,11 @@ def login():
             sql = "SELECT password FROM users WHERE username = %s;"
             username = request.form['username'].strip()
             cursor.execute(sql, username)
-            user_password = cursor.fetchone()
-            if user_password is None:
-                return redirect(url_for('index'))
-            if user_password[0] == request.form['password']:
+            hash_in_db = cursor.fetchone()[0]
+            hash_from_input = hashlib.md5(request.form['password'].encode()).hexdigest()
+            if hash_in_db is None:
+                flash("User does not exist.")
+            elif hash_in_db == hash_from_input:
                 session.clear()
                 session['username'] = username
                 return redirect(url_for('index'))
@@ -89,16 +99,66 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.route('/', methods=["GET"])
+@app.route('/register', methods=("GET", "POST"))
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        password_again = request.form["password_again"]
+        if password != password_again:
+            return redirect(url_for("register"))
+        elif is_username_taken(username) and username != "":
+            flash("Username is taken.")
+            return redirect(url_for("register"))
+        hashed = hashlib.md5(password.encode()).hexdigest()
+
+
+        with connection.cursor() as cursor:
+            sql = "INSERT INTO `users` (`username`, `password`, `role`) VALUES (%s, %s, %s);"
+            cursor.execute(sql, (username, hashed, "user"))
+            connection.commit()
+            flash("Register successful.")
+
+    return render_template('register.html')
+
+
+@app.route('/welcome', methods=["GET"])
+def welcome():
+    return render_template('welcome.html')
+
+
+@app.route('/no_access', methods=["GET"])
+def no_access():
+    pass
+
+
+@app.route('/', methods=["GET", "POST"])
 @user
 def index():
     people = []
     with connection.cursor() as cursor:
-        sql = "SELECT * FROM peopledata ORDER BY id DESC;"
+        sql = "SELECT * FROM peopledata ORDER BY name, city;"
         cursor.execute(sql)
         result = cursor.fetchall()
         for person in result:
             people.append(Person(person))
+    if request.method == "POST":
+        if request.form.get("reset_search", False) is not False:
+            return redirect(url_for('index'))
+
+        people = []
+        name = '%' + request.form.get("name", '') + '%'
+        phone_number = '%' + request.form.get("phone_number", '') + '%'
+        city = '%' + request.form.get("city", '') + '%'
+
+        with connection.cursor() as cursor:
+            sql = """SELECT * FROM peopledata 
+                     WHERE name LIKE %s AND phone_number LIKE %s AND city LIKE %s
+                     ORDER BY name, city;"""
+            cursor.execute(sql, (name, phone_number, city))
+            result = cursor.fetchall()
+            for person in result:
+                people.append(Person(person))
 
     return render_template('index.html', people=people, username=session.get('username'))
 
@@ -108,7 +168,7 @@ def index():
 def admin_index():
     people = []
     with connection.cursor() as cursor:
-        sql = "SELECT * FROM peopledata ORDER BY id DESC;"
+        sql = "SELECT * FROM peopledata ORDER BY name, city;"
         cursor.execute(sql)
         result = cursor.fetchall()
         for person in result:
@@ -170,5 +230,43 @@ def edit(id):
 
     return (render_template('edit.html', person=result))
 
+
+@app.route('/users', methods=("GET", "POST"))
+@admin
+def users():
+    users = []
+    with connection.cursor() as cursor:
+        sql = "SELECT username, role FROM users ORDER BY role, username;"
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        for user in result:
+            users.append(User(user))
+
+    if request.method == "POST":
+        delete_user = request.form.get("delete", False)
+        change_role = request.form.get("edit_role", "off")
+        print(change_role)
+
+        if delete_user is not False:
+            with connection.cursor() as cursor:
+                sql = "DELETE FROM users WHERE username = %s;"
+                cursor.execute(sql, delete_user)
+                connection.commit()
+                return redirect(url_for("users"))
+        elif change_role is not False:
+            roles = {
+                "on": "admin",
+                "off": "user"
+            }
+            with connection.cursor() as cursor:
+                sql = "UPDATE users SET role = %s WHERE username = %s"
+                cursor.execute(sql, (roles[change_role], request.form["role_change_username"]))
+                connection.commit()
+                return redirect(url_for("users"))
+
+    return render_template("users.html", users=users)
+
+
 if __name__ == '__main__':
     app.run()
+

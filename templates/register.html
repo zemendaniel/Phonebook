@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <script>
+        function compare() {
+            let string1 = document.getElementById("password").value;
+            let string2 = document.getElementById("password_again").value;
+            if (string1 === string2) {
+                document.getElementById("match").innerHTML = "Passwords match.";
+            }
+                else{
+                document.getElementById("match").innerHTML = "Passwords do NOT match.";
+                }
+
+        }
+    </script>
+</head>
+<body>
+<form action="" method="post">
+    <table>
+        <tr>
+            <td><input type="text" placeholder="Username" name="username"></td>
+            <td><input type="text" placeholder="Password" name="password" id="password" onkeyup="compare()"></td>
+            <td><input type="text" placeholder="Password again" name="password_again" id="password_again" onkeyup="compare()"></td>
+        </tr>
+        <tr><td id="match" colspan="3">Passwords do NOT match.</td></tr>
+
+    </table>
+    {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
+            <h3>{{ message }}</h3>
+        {% endfor %}
+    {% endwith %}
+    <button type="submit" id="submit">Register</button>
+
+</form>
+
+</body>
+</html>

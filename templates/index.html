@@ -12,14 +12,27 @@
 </head>
 <body>
 
-{% if username %}
 <h3>Current user: {{ username }}</h3>
-{% endif %}
 
+<form action="" method="post">
+<table>
+        <tr>
+            <td><input type="text" name="name" placeholder="Name"></td>
+            <td><input type="text" name="phone_number" placeholder="Phone number"></td>
+            <td><input type="text" name="city" placeholder="City"></td>
+        </tr>
+</table>
+    <button type="submit">Search</button>
+</form>
+
+<form action="" method="post">
+    <input type="hidden" name="reset_search">
+    <button type="submit">Reset search</button>
+</form>
+<br>
 <table>
         {% for person in people %}
             <tr>
-                <th>{{ person.id }}</th>
                 <td>{{ person.name }}</td>
                 <td>{{ person.phone_number }}</td>
                 <td>{{ person.city }}</td>

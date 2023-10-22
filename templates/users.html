@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Users</title>
+    <style>
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        }
+    </style>
+</head>
+
+<body>
+<table>
+        {% for user in users %}
+            <tr>
+                <th>{{ user.username }}</th>
+                <td>Admin?</td>
+                    <form action="" method="post">
+                    <td><input type=checkbox {% if user.role == "admin" %}checked{% endif %} name="edit_role"></td>
+                        <input type="hidden" name="role_change_username" value="{{ user.username }}">
+                    <td><button type="submit">Edit role</button></td>
+                    </form>
+
+                <form action="" method="post" onsubmit="return confirm('Biztosan törli ({{ user.username }})?')">
+                <input type="hidden" value="{{ user.username }}" name="delete">
+                <td><button  type="submit">Delete</button></td>
+                </form>
+
+            </tr>
+        {% endfor %}
+    </table>
+
+</body>
+</html>
