@@ -8,5 +8,12 @@
 <h1>Welcome!</h1>
 <h3>This website is a phonebook.</h3>
 <p>You must be logged in to use the website.</p>
+
+{% with messages = get_flashed_messages() %}
+    {% for message in messages %}
+        <h3>{{ message }}</h3>
+    {% endfor %}
+{% endwith %}
+
 </body>
 </html>

@@ -14,11 +14,16 @@
 <form action="" method="post">
 
 <table>
-    <tr><td><input type="text" placeholder="Username" name="username"></td></tr>
+    <tr><td><input type="text" placeholder="Username" name="username" value="{{ save_form.username }}"></td></tr>
     <tr><td><input type="password" placeholder="Password" name="password"></td></tr>
 </table>
 
 <button type="submit">Login</button>
+    {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
+            <h3>{{ message }}</h3>
+        {% endfor %}
+    {% endwith %}
 
 </form>
 </body>

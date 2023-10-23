@@ -17,9 +17,9 @@
 <form action="" method="post">
 <table>
         <tr>
-            <td><input type="text" name="name" placeholder="Name"></td>
-            <td><input type="text" name="phone_number" placeholder="Phone number"></td>
-            <td><input type="text" name="city" placeholder="City"></td>
+            <td><input type="text" name="name" placeholder="Name" value="{{ save_form.name }}"></td>
+            <td><input type="text" name="phone_number" placeholder="Phone number" value="{{ save_form.phone_number }}"></td>
+            <td><input type="text" name="city" placeholder="City" value="{{ save_form.city }}"></td>
         </tr>
 </table>
     <button type="submit">Search</button>

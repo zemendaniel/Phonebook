@@ -1,4 +1,4 @@
-# sql injection, alapvető gombok, flashek, welcome page, error handling
+# sql injection, alapvető gombok, flashek, welcome page, error handling, qol
 
 from functions import *
 from flask import Flask, render_template, request, redirect, url_for, g, session, current_app, flash
@@ -68,58 +68,84 @@ class Person:
         self.phone_number = person[2]
         self.city = person[3]
 
+
 class User:
     def __init__(self, user):
         self.username = user[0]
         self.role = user[1]
 
 
+save_form = {
+    'name': '',
+    'phone_number': '',
+    'city': '',
+    'username': '',
+ }
+
+
 @app.route('/login', methods=("GET", "POST"))
 def login():
+    global save_form
     if request.method == "POST":
         with connection.cursor() as cursor:
             sql = "SELECT password FROM users WHERE username = %s;"
             username = request.form['username'].strip()
             cursor.execute(sql, username)
-            hash_in_db = cursor.fetchone()[0]
+
+            try:
+                hash_in_db = cursor.fetchone()[0]
+            except TypeError:
+                flash('User does not exist.')
+                save_form['username'] = username
+                return render_template("login.html", save_form=save_form)
+
             hash_from_input = hashlib.md5(request.form['password'].encode()).hexdigest()
-            if hash_in_db is None:
-                flash("User does not exist.")
-            elif hash_in_db == hash_from_input:
+            if hash_in_db == hash_from_input:
                 session.clear()
                 session['username'] = username
                 return redirect(url_for('index'))
 
-    return render_template("login.html")
+            else:
+                flash('Password is incorrect.')
+
+            save_form['username'] = username
+
+    return render_template("login.html", save_form=save_form)
 
 
 @app.route('/logout', methods=("GET", "POST"))
 def logout():
     session.clear()
-    return redirect(url_for('login'))
+    flash('You logged out.')
+    return redirect(url_for('welcome'))
 
 
 @app.route('/register', methods=("GET", "POST"))
 def register():
+    global save_form
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
         password_again = request.form["password_again"]
-        if password != password_again:
-            return redirect(url_for("register"))
-        elif is_username_taken(username) and username != "":
+        if is_username_taken(username) and username != "":
             flash("Username is taken.")
-            return redirect(url_for("register"))
-        hashed = hashlib.md5(password.encode()).hexdigest()
+            save_form['username'] = username
+            return render_template('register.html', save_form=save_form)
+        elif password != password_again:
+            flash('Passwords do not match.')
+            save_form['username'] = username
+            return render_template('register.html', save_form=save_form)
+        elif username != '' and password != '':
+            hashed = hashlib.md5(password.encode()).hexdigest()
+            with connection.cursor() as cursor:
+                sql = "INSERT INTO `users` (`username`, `password`, `role`) VALUES (%s, %s, %s);"
+                cursor.execute(sql, (username, hashed, "user"))
+                connection.commit()
+                session.clear()
+                session['username'] = username
+                flash("Register successful and you have logged in.")
 
-
-        with connection.cursor() as cursor:
-            sql = "INSERT INTO `users` (`username`, `password`, `role`) VALUES (%s, %s, %s);"
-            cursor.execute(sql, (username, hashed, "user"))
-            connection.commit()
-            flash("Register successful.")
-
-    return render_template('register.html')
+    return render_template('register.html', save_form=save_form)
 
 
 @app.route('/welcome', methods=["GET"])
@@ -135,6 +161,7 @@ def no_access():
 @app.route('/', methods=["GET", "POST"])
 @user
 def index():
+    global save_form
     people = []
     with connection.cursor() as cursor:
         sql = "SELECT * FROM peopledata ORDER BY name, city;"
@@ -144,12 +171,24 @@ def index():
             people.append(Person(person))
     if request.method == "POST":
         if request.form.get("reset_search", False) is not False:
+            save_form = {
+                'name': '',
+                'phone_number': '',
+                'city': '',
+                'username': '',
+            }
             return redirect(url_for('index'))
 
         people = []
-        name = '%' + request.form.get("name", '') + '%'
-        phone_number = '%' + request.form.get("phone_number", '') + '%'
-        city = '%' + request.form.get("city", '') + '%'
+        name = request.form.get("name", '')
+        phone_number = request.form.get("phone_number", '')
+        city = request.form.get("city", '')
+        save_form['name'] = name
+        save_form['phone_number'] = phone_number
+        save_form['city'] = city
+        name = '%' + name + '%'
+        phone_number = '%' + phone_number + '%'
+        city = '%' + city + '%'
 
         with connection.cursor() as cursor:
             sql = """SELECT * FROM peopledata 
@@ -160,7 +199,7 @@ def index():
             for person in result:
                 people.append(Person(person))
 
-    return render_template('index.html', people=people, username=session.get('username'))
+    return render_template('index.html', people=people, username=session.get('username'), save_form=save_form)
 
 
 @app.route('/admin_index', methods=("GET", "POST"))
