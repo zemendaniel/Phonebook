@@ -28,6 +28,7 @@ def user(view):
             cursor.execute(sql, username)
             role = cursor.fetchone()[0]
         if role in ['user', 'admin']:
+            session['role'] = role
             return view(**kwargs)
 
         return redirect(url_for('welcome'))
@@ -46,9 +47,10 @@ def admin(view):
             cursor.execute(sql, session['username'])
             role = cursor.fetchone()[0]
         if role == 'admin':
+            session['role'] = role
             return view(**kwargs)
 
-        return redirect(url_for('welcome'))
+        return redirect(url_for('no_access'))
 
     return wrapped_view
 
@@ -103,6 +105,7 @@ def login():
             if hash_in_db == hash_from_input:
                 session.clear()
                 session['username'] = username
+                flash('You logged in.')
                 return redirect(url_for('index'))
 
             else:
@@ -144,18 +147,19 @@ def register():
                 session.clear()
                 session['username'] = username
                 flash("Register successful and you have logged in.")
+                return redirect(url_for('index'))
 
     return render_template('register.html', save_form=save_form)
 
 
 @app.route('/welcome', methods=["GET"])
 def welcome():
-    return render_template('welcome.html')
+    return render_template('welcome.html', username=session.get('username', None))
 
 
 @app.route('/no_access', methods=["GET"])
 def no_access():
-    pass
+    return render_template('no_access.html')
 
 
 @app.route('/', methods=["GET", "POST"])
@@ -199,7 +203,8 @@ def index():
             for person in result:
                 people.append(Person(person))
 
-    return render_template('index.html', people=people, username=session.get('username'), save_form=save_form)
+    return render_template('index.html', people=people, username=session.get('username'), save_form=save_form,
+                           role=session['role'])
 
 
 @app.route('/admin_index', methods=("GET", "POST"))

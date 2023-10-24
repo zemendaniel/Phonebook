@@ -5,6 +5,17 @@
     <title>Welcome!</title>
 </head>
 <body>
+
+{% if not username %}
+<p><a href="{{ url_for('login') }}">Login</a></p>
+<p><a href="{{ url_for('register') }}">Register</a></p>
+{% endif %}
+
+{% if username %}
+<p>Logged in as: {{ username }}</p>
+<p><a href="{{ url_for('logout') }}">Logout</a></p>
+<p><a href="{{ url_for('index') }}">Index</a></p>
+{% endif %}
 <h1>Welcome!</h1>
 <h3>This website is a phonebook.</h3>
 <p>You must be logged in to use the website.</p>
