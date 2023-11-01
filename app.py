@@ -1,5 +1,3 @@
-# sql injection, alapvető gombok, flashek, welcome page, error handling, qol
-
 from functions import *
 from flask import Flask, render_template, request, redirect, url_for, g, session, current_app, flash
 import functools
@@ -61,6 +59,16 @@ def load_current_user():
         g.user = {'username': session['username']}
     else:
         g.user = None
+        session['username'] = None
+
+
+@app.before_request
+def create_save_form():
+    if 'save_form' not in session.keys():
+        session['save_form'] = {}
+
+    print(session['username'])
+    print(session['save_form'])
 
 
 class Person:
@@ -77,17 +85,8 @@ class User:
         self.role = user[1]
 
 
-save_form = {
-    'name': '',
-    'phone_number': '',
-    'city': '',
-    'username': '',
- }
-
-
 @app.route('/login', methods=("GET", "POST"))
 def login():
-    global save_form
     if request.method == "POST":
         with connection.cursor() as cursor:
             sql = "SELECT password FROM users WHERE username = %s;"
@@ -98,8 +97,8 @@ def login():
                 hash_in_db = cursor.fetchone()[0]
             except TypeError:
                 flash('User does not exist.')
-                save_form['username'] = username
-                return render_template("login.html", save_form=save_form)
+                session['save_form']['username'] = username
+                return render_template("login.html")
 
             hash_from_input = hashlib.md5(request.form['password'].encode()).hexdigest()
             if hash_in_db == hash_from_input:
@@ -111,9 +110,9 @@ def login():
             else:
                 flash('Password is incorrect.')
 
-            save_form['username'] = username
+            session['save_form']['username'] = username
 
-    return render_template("login.html", save_form=save_form)
+    return render_template("login.html")
 
 
 @app.route('/logout', methods=("GET", "POST"))
@@ -125,19 +124,18 @@ def logout():
 
 @app.route('/register', methods=("GET", "POST"))
 def register():
-    global save_form
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
         password_again = request.form["password_again"]
         if is_username_taken(username) and username != "":
             flash("Username is taken.")
-            save_form['username'] = username
-            return render_template('register.html', save_form=save_form)
+            session['save_form']['username'] = username
+            return render_template('register.html')
         elif password != password_again:
             flash('Passwords do not match.')
-            save_form['username'] = username
-            return render_template('register.html', save_form=save_form)
+            session['save_form']['username'] = username
+            return render_template('register.html')
         elif username != '' and password != '':
             hashed = hashlib.md5(password.encode()).hexdigest()
             with connection.cursor() as cursor:
@@ -149,12 +147,12 @@ def register():
                 flash("Register successful and you have logged in.")
                 return redirect(url_for('index'))
 
-    return render_template('register.html', save_form=save_form)
+    return render_template('register.html')
 
 
 @app.route('/welcome', methods=["GET"])
 def welcome():
-    return render_template('welcome.html', username=session.get('username', None))
+    return render_template('welcome.html')
 
 
 @app.route('/no_access', methods=["GET"])
@@ -165,7 +163,6 @@ def no_access():
 @app.route('/', methods=["GET", "POST"])
 @user
 def index():
-    global save_form
     people = []
     with connection.cursor() as cursor:
         sql = "SELECT * FROM peopledata ORDER BY name, city;"
@@ -175,21 +172,16 @@ def index():
             people.append(Person(person))
     if request.method == "POST":
         if request.form.get("reset_search", False) is not False:
-            save_form = {
-                'name': '',
-                'phone_number': '',
-                'city': '',
-                'username': '',
-            }
+            del session['save_form']
             return redirect(url_for('index'))
 
         people = []
         name = request.form.get("name", '')
         phone_number = request.form.get("phone_number", '')
         city = request.form.get("city", '')
-        save_form['name'] = name
-        save_form['phone_number'] = phone_number
-        save_form['city'] = city
+        session['save_form']['name'] = name
+        session['save_form']['phone_number'] = phone_number
+        session['save_form']['city'] = city
         name = '%' + name + '%'
         phone_number = '%' + phone_number + '%'
         city = '%' + city + '%'
@@ -203,8 +195,7 @@ def index():
             for person in result:
                 people.append(Person(person))
 
-    return render_template('index.html', people=people, username=session.get('username'), save_form=save_form,
-                           role=session['role'])
+    return render_template('index.html', people=people)
 
 
 @app.route('/admin_index', methods=("GET", "POST"))
@@ -227,11 +218,11 @@ def admin_index():
                 sql = "DELETE FROM peopledata WHERE id = %s;"
                 cursor.execute(sql, delete)
                 connection.commit()
-                return(redirect(url_for('admin_index')))
+                return redirect(url_for('admin_index'))
         elif id is not False:
-            return(redirect(url_for('edit', id=id)))
+            return redirect(url_for('edit', id=id))
 
-    return (render_template('admin_index.html', people=people))
+    return render_template('admin_index.html', people=people)
 
 
 @app.route('/add', methods=("GET", "POST"))
@@ -248,7 +239,7 @@ def add():
             cursor.execute(sql, (form_data.name, form_data.phone_number, form_data.city))
             connection.commit()
 
-    return (render_template('add.html'))
+    return render_template('add.html')
 
 
 @app.route('/edit/<int:id>', methods=("GET", "POST"))
@@ -270,9 +261,9 @@ def edit(id):
             cursor.execute(sql, (form_data.name, form_data.phone_number, form_data.city, id))
             connection.commit()
 
-        return(redirect(url_for('edit', id=id)))
+        return redirect(url_for('edit', id=id))
 
-    return (render_template('edit.html', person=result))
+    return render_template('edit.html', person=result)
 
 
 @app.route('/users', methods=("GET", "POST"))

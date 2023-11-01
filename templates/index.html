@@ -10,17 +10,18 @@
         }
     </style>
 </head>
-{% if role == 'admin' %}
+<body>
+{% if session['role'] == 'admin' %}
     <p><a href="{{ url_for('admin_index') }}">Admin index</a></p>
 {% endif %}
-<h2>Logged in as: {{ username }}</h2>
+<h2>Logged in as: {{ session['username'] }}</h2>
 <p><a href="{{ url_for('logout') }}">Logout</a></p>
 <form action="" method="post">
 <table>
         <tr>
-            <td><input type="text" name="name" placeholder="Name" value="{{ save_form.name }}"></td>
-            <td><input type="text" name="phone_number" placeholder="Phone number" value="{{ save_form.phone_number }}"></td>
-            <td><input type="text" name="city" placeholder="City" value="{{ save_form.city }}"></td>
+            <td><input type="text" name="name" placeholder="Name" value="{{ session['save_form'].name }}"></td>
+            <td><input type="text" name="phone_number" placeholder="Phone number" value="{{ session['save_form'].phone_number }}"></td>
+            <td><input type="text" name="city" placeholder="City" value="{{ session['save_form'].city }}"></td>
         </tr>
 </table>
     <button type="submit">Search</button>
