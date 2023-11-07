@@ -2,50 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
     <title>Index</title>
     <style>
-
-        tr{
-            border: solid black 2px;
+        table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
         }
-
-        body{
-        font-family: Arial;
-        margin-top: 50px;
-        text-align: center;
-        background-color: #FaF8ED;
-        }
-        h1{
-            padding: 20px;
-            color: #F9B572;
-        }
-        h2, h3{
-            color: #748E63;
-        }
-
-        p{
-            color:#99B080
-        }
-        table{
-            margin-left: auto;
-            margin-right: auto;
-            width: 500px;
-        }
-        #gomb{
-            margin-top: 5px;
-            background-color: #F9B572;
-        }
-
     </style>
 </head>
 
 <body>
-
-<h2>Admin index</h2>
-
+<p><a href="{{ url_for('index') }}">Index</a></p>
+<p><a href="{{ url_for('add') }}">Add</a></p>
+<p><a href="{{ url_for('users') }}">Users</a></p>
 <table>
         {% for person in people %}
             <tr>
@@ -56,26 +25,16 @@
 
                 <form action="" method="post">
                 <input type="hidden" value="{{ person.id }}" name="delete">
-                <td><button class="btn " id="gomb" type="submit">Delete</button></td>
+                <td><button type="submit">Delete</button></td>
                 </form>
 
                 <form action="" method="post">
                 <input type="hidden" value="{{ person.id }}" name="edit">
-                <td><button class="btn" id="gomb" type="submit">Edit</button></td>
+                <td><button type="submit">Edit</button></td>
                 </form>
             </tr>
         {% endfor %}
     </table>
-
-<div class="container">
-    <div class="row">
-        <p class="col-sm"><a class="btn btn-xl" id="gomb" href="{{ url_for('index') }}">Index</a></p>
-        <p class="col-sm"><a class="btn btn-xl" id="gomb" href="{{ url_for('add') }}">Add</a></p>
-        <p class="col-sm"><a class="btn btn-xl" id="gomb" href="{{ url_for('users') }}">Users</a></p>
-    </div>
-</div>
-
-
 
 </body>
 </html>
